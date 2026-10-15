@@ -1,5 +1,5 @@
 """Read-only client extraction into a local, hash-addressed cache."""
-import json,hashlib,subprocess,threading,struct
+import json,hashlib,os,subprocess,threading,struct
 from pathlib import Path
 from functools import lru_cache
 import paths
@@ -13,7 +13,7 @@ def extract(identity):
  target=BASE/'assets/raw'/identity
  with LOCK:
   if not target.exists():
-   temp=target.with_suffix('.tmp')
+   target.parent.mkdir(parents=True,exist_ok=True);temp=target.with_name(f'{identity}.{os.getpid()}.tmp')  # unique per process: the library builder extracts in parallel
    result=subprocess.run([str(BASE/'tools/mpqextract'),'extract',str(paths.archive(record['archive'])),record['path'],str(temp)],capture_output=True,timeout=25)
    if result.returncode:temp.unlink(missing_ok=True);raise ValueError('Client asset could not be extracted')
    temp.replace(target)
