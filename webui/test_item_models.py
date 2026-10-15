@@ -20,3 +20,11 @@ class ItemModelTests(unittest.TestCase):
   for p in visuals()['profiles']:
    d=json.loads((B/'assets/models'/Path(p['model']).name).read_text())
    for mount in ('0','1','2','5','6','11'):self.assertEqual(len(d['attachments'][mount]),3)
+
+class ViewerCacheBustTests(unittest.TestCase):
+ def test_item_model_fetch_is_versioned_by_library_generation(self):
+  # library item models are path-addressed (sha of the client path): a rebuilt model keeps its URL, so the fetch carries the
+  # library generation from visuals.json, or browsers keep a stale copy (final review C1, 2026-10-15)
+  js=(Path(__file__).parent/'static/viewer.js').read_text()
+  self.assertIn("fetch('/api/item-model?id='+a.ref.model+'&g='+(data.generation||0))",js)
+

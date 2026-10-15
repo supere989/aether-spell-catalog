@@ -25,7 +25,7 @@ async function mount(slot,preview=false){
  for(const [i,ref] of (visual('shoulders')?.attachments?.shoulders||[]).entries())if(ref)requested.push({ref,point:6-i});
  for(const [key,point] of [['main_hand',1],['off_hand',slot.gear?.off_hand?.kind==='shield'?0:2],['ranged',12]]){const ref=visual(key)?.attachments?.[key];if(ref)requested.push({ref,point})}
  let missingModels=0;
- const attachments=(await Promise.all(requested.map(async a=>{try{if(!meshData.attachments?.[a.point])throw Error('Missing attachment point');const r=await fetch('/api/item-model?id='+a.ref.model);if(!r.ok)throw Error('Model unavailable');const model=await r.json(),images=await Promise.all(model.groups.map(g=>picture(g.texture||a.ref.texture)));return {...a,model,images}}catch{missingModels++;return null}}))).filter(Boolean);
+ const attachments=(await Promise.all(requested.map(async a=>{try{if(!meshData.attachments?.[a.point])throw Error('Missing attachment point');const r=await fetch('/api/item-model?id='+a.ref.model+'&g='+(data.generation||0));if(!r.ok)throw Error('Model unavailable');const model=await r.json(),images=await Promise.all(model.groups.map(g=>picture(g.texture||a.ref.texture)));return {...a,model,images}}catch{missingModels++;return null}}))).filter(Boolean);
  const capeImage=await picture(visual('back')?.cape_texture);
  const hairImage=await picture(profile.textures['3']?.[0]);
  if(gen!==generation)return;

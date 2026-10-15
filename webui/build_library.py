@@ -18,7 +18,8 @@ def make_texture(ident):
 def make_item(ident, skin):
     import export_item_mesh
     t = target('item', ident); t.parent.mkdir(parents=True, exist_ok=True); tmp = t.with_suffix('.tmp')
-    tmp.write_text(json.dumps(export_item_mesh.export(ident, skin), separators=(',', ':'))); tmp.replace(t); return True
+    from server import prefixed   # served statically under /simulator by the VPS: same rewrite as visuals.json (final review C1)
+    tmp.write_bytes(prefixed(json.dumps(export_item_mesh.export(ident, skin), separators=(',', ':')).encode(), '/simulator')); tmp.replace(t); return True
 
 def _one(job, texture, item):
     kind, ident, skin = job
@@ -50,15 +51,21 @@ def _record(ident):
         return {'archive': r.get('archive'), 'path': r.get('path')}
     except (OSError, ValueError): return {}
 
-def write_visuals(src):
+def write_visuals(src, generation=None):
+    """visuals.json with /simulator paths; carries the library generation so the page can version its item-model fetches"""
     from server import prefixed
     t = paths.path('library') / 'visuals.json'; t.parent.mkdir(parents=True, exist_ok=True); tmp = t.with_suffix('.tmp')
-    tmp.write_bytes(prefixed(Path(src).read_bytes(), '/simulator')); tmp.replace(t)
+    data = json.loads(prefixed(Path(src).read_bytes(), '/simulator'))
+    if generation is not None: data['generation'] = generation
+    tmp.write_text(json.dumps(data, separators=(',', ':'))); tmp.replace(t)
 
-def write_generation(counts):
+def next_generation():
+    g = paths.path('library') / 'generation.json'
+    return (json.loads(g.read_text()).get('generation', 0) if g.is_file() else 0) + 1
+
+def write_generation(counts, generation):
     g = paths.path('library') / 'generation.json'; g.parent.mkdir(parents=True, exist_ok=True)
-    prev = json.loads(g.read_text()).get('generation', 0) if g.is_file() else 0
-    tmp = g.with_suffix('.tmp'); tmp.write_text(json.dumps({'generation': prev + 1, 'built': time.strftime('%FT%TZ', time.gmtime()), **counts})); tmp.replace(g)
+    tmp = g.with_suffix('.tmp'); tmp.write_text(json.dumps({'generation': generation, 'built': time.strftime('%FT%TZ', time.gmtime()), **counts})); tmp.replace(g)
 
 def jobs_from_visuals():
     import asset_io, server
@@ -72,11 +79,11 @@ if __name__ == '__main__':
     counts = run_jobs(jobs, args.workers)
     models = paths.path('library') / 'models'; models.mkdir(parents=True, exist_ok=True)
     for f in (BASE / 'assets/models').glob('*.json'): shutil.copy2(f, models / f.name)
-    write_visuals(BASE / 'assets/visuals.json')
+    gen = next_generation(); write_visuals(BASE / 'assets/visuals.json', gen)
     counts['models'] = len(list(models.glob('*.json')))
     counts['textures'] = len(list((paths.path('library') / 'assets').glob('*.png')))
     counts['item_models'] = len(list((paths.path('library') / 'item-models').glob('*.json')))
-    write_generation(counts)
+    write_generation(counts, gen)
     miss = paths.path('ledger') / 'missing-assets.jsonl'   # published with the library: what it lacks and why
     if miss.is_file():
         tmp = paths.path('library') / 'missing-assets.jsonl.tmp'; shutil.copy2(miss, tmp); tmp.replace(tmp.with_suffix(''))
