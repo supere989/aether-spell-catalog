@@ -1,4 +1,4 @@
-"""Read-only capture of available set items from local qualification database."""
+"""Read-only capture of available set items from the configured world database (config/paths.toml [world_db])."""
 import json,subprocess,struct,hashlib
 from pathlib import Path
 import paths
@@ -17,5 +17,5 @@ for i in range(n):
 ids=sorted({i for s in sets for i in s['items']})
 columns=['entry','name','class','subclass','InventoryType','AllowableClass','RequiredLevel','Quality','ItemLevel','itemset','armor','block','delay','dmg_min1','dmg_max1','dmg_type1','dmg_min2','dmg_max2','ScalingStatDistribution','ScalingStatValue','RandomProperty','RandomSuffix']+[f'stat_{k}{i}' for i in range(1,11) for k in ('type','value')]+[f'spellid_{i}' for i in range(1,6)]
 rows=query('SELECT '+','.join('`'+c+'`' for c in columns)+' FROM item_template WHERE itemset<>0 OR entry IN ('+','.join(map(str,ids))+');')
-(OUT/'gear-source.json').write_text(json.dumps(dict(source_database=db,source_kind='local qualification database; not live realm verification',dbc_sha256=hashlib.sha256(b).hexdigest(),sets=sets,items=rows),indent=2))
+(OUT/'gear-source.json').write_text(json.dumps(dict(source_database=db,source_kind=paths.world_db_kind(),dbc_sha256=hashlib.sha256(b).hexdigest(),sets=sets,items=rows),indent=2))
 print(json.dumps(dict(sets=len(sets),items=len(rows),custom_class_items=sum(int(r['AllowableClass'])>0 and bool(int(r['AllowableClass'])&sum(1<<(c-1) for c in range(12,33))) for r in rows))))

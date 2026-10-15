@@ -37,6 +37,10 @@ password_file = "{d}/pw"
         argv, env = paths.mysql_args(['--batch'])
         self.assertNotIn('s3cret', ' '.join(argv)); self.assertEqual(env['MYSQL_PWD'], 's3cret')
         self.assertEqual(argv[-1], 'acore_world')
+    def test_world_db_kind_defaults_and_reads(self):
+        self.assertEqual(paths.world_db_kind(), 'world database (source not labelled)')
+        p = self.d / 'p.toml'; p.write_text(p.read_text().replace('[world_db]\n', '[world_db]\nkind = "live realm world database (read-only copy)"\n'))
+        paths.config.cache_clear(); self.assertEqual(paths.world_db_kind(), 'live realm world database (read-only copy)')
     def test_unknown_name_is_an_error(self):
         with self.assertRaises(KeyError): paths.path('nope')
 

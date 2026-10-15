@@ -10,6 +10,7 @@ library = "/srv/simulator/library"
 ledger = "/srv/simulator/ledger"
 
 [world_db]
+kind = "live realm world database (read-only copy, refreshed by refresh-world)"
 host = "127.0.0.1"
 port = 3306
 user = "simread"

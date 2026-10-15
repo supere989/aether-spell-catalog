@@ -43,7 +43,7 @@ def resolve_equipment(slot):
 
 def search_sets(q='',offset=0,stats_only=False):
  data=catalog();rows=[s for s in data['sets'] if (q.lower() in s['name'].lower() or q==str(s['id'])) and (not stats_only or s['has_modeled_stats'])]
- return dict(total=len(rows),offset=offset,report=data['report'],sets=[{k:s[k] for k in ('id','name','class_scope','has_modeled_stats','usable_pieces')}|{'items':len(s['items']),'bonuses':len(s['bonuses'])} for s in rows[offset:offset+100]])
+ return dict(total=len(rows),offset=offset,report=data['report'],source_kind=data.get('source',{}).get('source_kind') or 'unlabelled item data',sets=[{k:s[k] for k in ('id','name','class_scope','has_modeled_stats','usable_pieces')}|{'items':len(s['items']),'bonuses':len(s['bonuses'])} for s in rows[offset:offset+100]])
 
 def set_detail(identity):
  s=catalog()['by_set'].get(identity)

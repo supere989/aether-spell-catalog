@@ -12,6 +12,9 @@ class GearCatalogTests(unittest.TestCase):
   a=search_sets();b=search_sets(offset=100)
   self.assertEqual(len(a['sets']),100);self.assertFalse({s['id'] for s in a['sets']}&{s['id'] for s in b['sets']})
   self.assertTrue(all(s['has_modeled_stats'] for s in search_sets(stats_only=True)['sets']))
+ def test_search_reports_item_data_source(self):
+  r=search_sets();self.assertIsInstance(r.get('source_kind'),str);self.assertTrue(r['source_kind'])
+  self.assertEqual(r['source_kind'],catalog()['source']['source_kind'])
  def example(self):
   d=set_detail(41);gear={}
   for i in sorted(d['items'],key=lambda i:i['id']):

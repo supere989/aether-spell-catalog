@@ -20,6 +20,10 @@ def world_db():
     return dict(host=w['host'], port=int(w['port']), user=w['user'], database=w['database'],
                 password=Path(w['password_file']).read_text().strip())
 
+def world_db_kind():
+    """how the configured world database should be described wherever its data is shown (provenance, SAI)"""
+    return config().get('world_db', {}).get('kind') or 'world database (source not labelled)'
+
 def mysql_args(extra):
     db = world_db(); env = dict(os.environ, MYSQL_PWD=db['password'])
     return ['mysql', '-h', db['host'], '-P', str(db['port']), '-u', db['user'], *extra, db['database']], env
