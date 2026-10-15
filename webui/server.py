@@ -25,7 +25,8 @@ def status_report():
         try:return paths.path(name)/file
         except (OSError,KeyError,ValueError):return None  # no config/paths.toml layout on this machine
     lib,led,src=at('library','generation.json'),at('ledger','reload.jsonl'),at('data','sources.json')
-    return COUNTERS.snapshot()|{'library':status.read_json(lib,{}) if lib else {},'reload':(status.last_line(led) if led else None) or {},'sources':status.read_json(src,{}) if src else {}}
+    mir=at('mirror','')
+    return COUNTERS.snapshot()|{'library':status.read_json(lib,{}) if lib else {},'reload':(status.last_line(led) if led else None) or {},'sources':status.read_json(src,{}) if src else {},'mirror':status.mirror_status(mir) if mir else {}}
 @lru_cache(maxsize=1)
 def visuals():return json.loads((BASE/'assets/visuals.json').read_text())
 MODEL_GATE=threading.Lock()

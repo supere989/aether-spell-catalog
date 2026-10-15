@@ -31,3 +31,16 @@ def last_line(path):
         lines = path.read_text().strip().splitlines()
         return json.loads(lines[-1]) if lines else None
     except (OSError, ValueError): return None
+
+def mirror_status(root):
+    """VM 194's Ascension client mirror (secondary download source): current release, its pin hash (the VPS compares it with the
+    published pin) and the last mirror-ascension ledger row. Read-only; missing pieces are None."""
+    import hashlib
+    from pathlib import Path
+    root = Path(root); cur = root / 'ascension/current'
+    try: release = cur.resolve(strict=True).name
+    except OSError: release = None
+    try: pin = hashlib.sha256((cur / 'pin.json').read_bytes()).hexdigest()
+    except OSError: pin = None
+    return {'ascension': {'current': release, 'pin_sha256': pin, 'last': last_line(root / 'ledger/ascension.jsonl')}}
+

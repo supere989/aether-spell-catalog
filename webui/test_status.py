@@ -33,4 +33,20 @@ class StatusTest(unittest.TestCase):
         self.assertEqual(e['casts']['12']['Fire Blast'], 2); self.assertEqual(e['casts']['13']['Heal'], 1)
         self.assertEqual(e['outcomes']['dodge'], 1); self.assertEqual(e['runs'], 1)
 
+class MirrorStatusTest(unittest.TestCase):
+    """VM 194 reports its Ascension mirror (release, pin hash, last sync) through /api/status — final review I4"""
+    def test_mirror_status(self):
+        import tempfile, hashlib
+        from pathlib import Path
+        with tempfile.TemporaryDirectory() as t:
+            m = Path(t); rel = m / 'ascension/releases/20261015-110111'; rel.mkdir(parents=True); (rel / 'pin.json').write_text('{"files": []}')
+            (m / 'ascension/current').symlink_to('releases/20261015-110111')
+            (m / 'ledger').mkdir(); (m / 'ledger/ascension.jsonl').write_text('{"result": "ok", "release": "20261015-110111"}\n')
+            st = status.mirror_status(m)
+            self.assertEqual(st['ascension']['current'], '20261015-110111')
+            self.assertEqual(st['ascension']['pin_sha256'], hashlib.sha256(b'{"files": []}').hexdigest())
+            self.assertEqual(st['ascension']['last']['result'], 'ok')
+        self.assertEqual(status.mirror_status(Path('/nonexistent-mirror'))['ascension']['current'], None)
+
+
 if __name__ == '__main__': unittest.main()

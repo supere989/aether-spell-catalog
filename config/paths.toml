@@ -8,6 +8,7 @@ dbc = "/srv/simulator/data/dbc"
 data = "/srv/simulator/data"
 library = "/srv/simulator/library"
 ledger = "/srv/simulator/ledger"
+mirror = "/srv/mirror"
 
 [world_db]
 kind = "live realm world database (read-only copy, refreshed by refresh-world)"
