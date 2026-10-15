@@ -44,4 +44,20 @@ password_file = "{d}/pw"
     def test_unknown_name_is_an_error(self):
         with self.assertRaises(KeyError): paths.path('nope')
 
+class ConfigFileChoiceTest(unittest.TestCase):
+    """deferred minor M3: the real config/paths.toml is untracked; the tracked example is the fallback"""
+    def test_real_file_then_example(self):
+        import tempfile
+        from unittest import mock
+        with tempfile.TemporaryDirectory() as t:
+            repo = Path(t); (repo / 'config').mkdir()
+            (repo / 'config/paths.example.toml').write_text('[paths]\ndata = "/example"\n')
+            with mock.patch.object(paths, 'REPO', repo), mock.patch.dict(os.environ, {}, clear=False):
+                os.environ.pop('SIM_PATHS', None); paths.config.cache_clear()
+                self.assertEqual(paths.path('data'), Path('/example'))
+                (repo / 'config/paths.toml').write_text('[paths]\ndata = "/real"\n'); paths.config.cache_clear()
+                self.assertEqual(paths.path('data'), Path('/real'))
+            paths.config.cache_clear()
+
+
 if __name__ == '__main__': unittest.main()

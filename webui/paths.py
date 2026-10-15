@@ -1,4 +1,4 @@
-"""Where the build scripts' inputs and outputs live: config/paths.toml (SIM_PATHS overrides). One file instead of hard-coded paths."""
+"""Where the build scripts' inputs and outputs live: config/paths.toml, untracked (else config/paths.example.toml; SIM_PATHS overrides). One file instead of hard-coded paths."""
 import os, tomllib
 from functools import lru_cache
 from pathlib import Path
@@ -6,7 +6,8 @@ REPO = Path(__file__).resolve().parent.parent
 
 @lru_cache(maxsize=1)
 def config():
-    return tomllib.loads(Path(os.environ.get('SIM_PATHS') or REPO / 'config/paths.toml').read_text())
+    real = REPO / 'config/paths.toml'   # untracked: describes one machine; the tracked example is only a fallback
+    return tomllib.loads(Path(os.environ.get('SIM_PATHS') or (real if real.is_file() else REPO / 'config/paths.example.toml')).read_text())
 
 def path(name):
     return Path(config()['paths'][name])

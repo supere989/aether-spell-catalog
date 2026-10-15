@@ -34,3 +34,6 @@ deploy_live_descriptions.py
 
 # StormLib build tree (tools/build-tools.sh)
 .build/
+
+# One machine's paths (copy config/paths.example.toml)
+config/paths.toml

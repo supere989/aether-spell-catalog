@@ -1,0 +1,20 @@
+# Example: copy to config/paths.toml (untracked — it describes one machine) and set the paths for that machine. webui/paths.py reads
+# config/paths.toml, else this example; SIM_PATHS=/other.toml overrides both.
+[paths]
+client_root = "/path/to/client"              # the client folder that holds Data/*.MPQ
+coa_src = "/path/to/coa-source"              # CoA server source: its src/ and apps/
+asset_catalog = "/path/to/asset-catalog"     # mpq-index + builders
+third_party = "/path/to/third_party"         # pywowlib
+dbc = "/path/to/dbc"                         # the realm's server DBCs
+data = "/path/to/data"                       # generated catalogs (gitignored in this repo)
+library = "/path/to/library"                 # build_library.py output
+ledger = "/path/to/ledger"                   # reload / missing-asset / refresh ledgers
+mirror = "/path/to/mirror"                   # optional: download mirror reported by /api/status
+
+[world_db]
+kind = "world database (describe its source here; shown on the page)"
+host = "127.0.0.1"
+port = 3306
+user = "readonly"
+database = "world"
+password_file = "/path/to/password-file"

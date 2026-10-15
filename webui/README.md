@@ -118,10 +118,18 @@ Helmet (race/sex-specific), left/right shoulder, main/off-hand, shield and range
 ### Equipment alignment repair
 Character and item meshes now evaluate the first embedded standing frame with hierarchical bone transforms, pivot rotation, scale, weighted vertices and inverse-transpose normals. Attachment matrices use the same pose as the character. Quaternion decoding reverses the parser-specific Blender XY conversion before evaluating native-space transforms. Zero-scale hidden bones use a pseudoinverse for finite normals. Left shoulder art uses mount 6 and right shoulder art uses mount 5. Helmet visibility uses ItemDisplayInfo gender references into HelmetGeosetVisData rather than hiding all hair. Goggles retain the selected hairstyle. Table layout reference: https://trinitycore.info/files/DBC/335/helmetgeosetvisdata . The preview remains a single standing frame, not animated combat; race-specific clipping beyond the checked Human Female equipment is not visually qualified. Converted posed items now use assets/item-models-v2.
 
-## Public simulator deployment — 2026-10-14
+## Public deployment — since 2026-10-15
 
-Public URL: https://aethercraft.net/simulator/ . Caddy on VPS 5.78.204.86 proxies only /simulator/* to loopback8798, forwarded by the workstation user service aether-simulator-tunnel.service. Backend aether-simulator-public.service runs server.py on workstation loopback8798 with --base-path /simulator --public-origin https://aethercraft.net. Both services enabled, auto-restarting. Workstation, Tailscale, and its installed client assets must remain available. Local8797 remains separate. No realm changes.
+Public URL: https://aethercraft.net/simulator/ . The backend (`server.py --bind <tunnel address> --base-path /simulator --public-origin
+https://aethercraft.net`) runs on a dedicated VM whose git checkout of this repository **is** the live code. The web host's reverse proxy
+serves the pre-built asset library (`build_library.py`: every texture, item model and character model, plus `visuals.json` stamped with
+the library `generation`) as static files and forwards everything else to the VM over a private tunnel. Library ids are path-addressed, so
+library files are cached for a day and item-model fetches carry `&g=<generation>`.
 
-Caddy template preserved at wow-trinitycore/web/Caddyfile.tmpl; live backup /etc/caddy/Caddyfile.pre-simulator-20261014. Rollback: restore that Caddy config after checking for newer edits, validate/reload Caddy, disable the two workstation user services. The import-map CSP hash must be updated if the import map changes. Routes/JSON asset URLs receive the configured prefix; POST accepts the configured public origin. Two concurrent simulations, 1MB request limit, backend CPU150%/memory2GB limits. No credentials or raw asset manifest published.
-
-Verified:46 unit tests; HTTPS UI and full five-player combat run (29.5seconds,268events); character mesh displayed; no browser console errors. Main homepage, scripts, class API and model endpoints200; private manifest404; foreign Origin403. Public scenario saves belong to the public browser origin; local scenarios may be transferred using Export/Import.
+- **Live edits:** `reloader.py` (a user service) watches the checkout. Static files are live on save; Python/data/config changes go live only
+  after the unit tests and a candidate server on `127.0.0.1:8799` pass a smoke run — otherwise the running server keeps the old code. Every
+  attempt is a `reload.jsonl` row; `/api/status` (never public) shows the last row and `reload_counts`.
+- **Configuration:** copy `config/paths.example.toml` to `config/paths.toml` (untracked) and set that machine's paths and world database.
+- **Rebuilding data:** build scripts write next to themselves, so rebuild in a scratch worktree with a copy of the data and promote by hand.
+- **Publishing:** `tools/hooks/pre-push` (`git config core.hooksPath tools/hooks`) refuses files over 2 MB, generated/game data, credentials,
+  internal addresses and `config/paths.toml`.
