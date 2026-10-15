@@ -3,7 +3,7 @@ server on the old code; every attempt is a reload.jsonl row (SAI). Polls once a 
 import argparse, json, subprocess, sys, time, urllib.request
 from pathlib import Path
 import paths
-WATCH = ('*.py', 'webui/*.py', 'planner/*.py', 'webui/static/*', 'webui/static/vendor/*')
+WATCH = ('*.py', 'webui/*.py', 'planner/*.py', 'webui/static/*', 'webui/static/vendor/*', 'config/*.toml')
 DATA = ('catalog.sqlite', 'webui/gear-catalog.json', 'webui/mechanics-source.json', 'webui/set-class-mapping.json', 'webui/assets/visuals.json')
 # The shape webui/static/app.js POSTs (balanced 5-slot group); short, so the smoke stays a few seconds.
 SMOKE_SCENARIO = {'size': 5, 'duration': 20, 'mode': 'pve', 'enemy_health': 50000, 'incoming_dps': 350,
@@ -34,14 +34,38 @@ def attempt(changed, run_tests, start_candidate, smoke, restart, diffstat=lambda
     if not ok: return ledger(row | {'result': 'tests-failed', 'error': err[-2000:]})
     cand = start_candidate()
     try:
+        if cand is not None and cand.poll() is not None:   # ours exited (e.g. a stale candidate holds the port): never smoke someone else's
+            return ledger(row | {'result': 'candidate-exited', 'error': f'candidate exited with {cand.poll()} before the smoke'})
         ok, err = smoke()
         if not ok: return ledger(row | {'result': 'smoke-failed', 'error': err[-2000:]})
     finally:
-        if cand: cand.terminate(); cand.wait(10)
+        if cand:
+            cand.terminate()
+            try: cand.wait(10)
+            except subprocess.TimeoutExpired: cand.kill(); cand.wait(5)
     try: restart()
     except Exception as e:  # noqa: BLE001 — a failed restart is ledgered, never silent
         return ledger(row | {'result': 'restart-failed', 'error': f'{type(e).__name__}: {e}'[-2000:]})
     return ledger(row | {'result': 'reloaded'})
+
+def safe_attempt(*a, **kw):
+    """attempt(), but an unexpected failure is a ledger row instead of a dead watcher (and a lost edit)"""
+    try: return attempt(*a, **kw)
+    except Exception as e:  # noqa: BLE001
+        row = {'ts': time.strftime('%FT%TZ', time.gmtime()), 'files': (a[0] if a else [])[:50], 'result': 'error', 'error': f'{type(e).__name__}: {e}'[-2000:]}
+        try: return ledger(row)
+        except OSError: print(json.dumps(row), file=sys.stderr, flush=True); return row
+
+def load_seen():
+    try: return json.loads((paths.path('ledger') / 'reload-seen.json').read_text())
+    except (OSError, ValueError): return None
+
+def save_seen(seen):
+    led = paths.path('ledger'); led.mkdir(parents=True, exist_ok=True); tmp = led / 'reload-seen.json.tmp'
+    tmp.write_text(json.dumps(seen)); tmp.replace(led / 'reload-seen.json')
+
+def changed_since(old, now):
+    return [] if old is None else sorted(k for k in old.keys() | now.keys() if old.get(k) != now.get(k))
 
 def main():
     a = argparse.ArgumentParser(); a.add_argument('--root', default='/srv/simulator/app'); a.add_argument('--unit', default='sim-server.service')
@@ -70,12 +94,16 @@ def main():
         except (OSError, subprocess.SubprocessError): return ''
         return (r.stdout.strip().splitlines() or [''])[-1]
     restart = lambda: subprocess.run(['systemctl', '--user', 'restart', args.unit], check=True, timeout=60)
-    seen = scan(root)
+    seen = scan(root); missed = changed_since(load_seen(), seen)      # edits made while the watcher was down are not lost
+    if missed: safe_attempt(missed, run_tests, start_candidate, smoke, restart, diffstat)
+    save_seen(seen)
     while True:
         time.sleep(1); now = scan(root)
         if now == seen: continue
         time.sleep(2); now = scan(root)        # debounce: editors save several files
-        changed = sorted(k for k in now.keys() | seen.keys() if now.get(k) != seen.get(k)); seen = now
-        attempt(changed, run_tests, start_candidate, smoke, restart, diffstat)
+        changed = changed_since(seen, now); seen = now
+        safe_attempt(changed, run_tests, start_candidate, smoke, restart, diffstat)
+        try: save_seen(seen)
+        except OSError as e: print(f'reload-seen not saved: {e}', file=sys.stderr, flush=True)
 
 if __name__ == '__main__': main()

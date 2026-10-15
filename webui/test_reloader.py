@@ -34,4 +34,35 @@ class ReloaderTest(unittest.TestCase):
         import simulation
         self.assertIn('outcome', simulation.simulate(json.loads(json.dumps(reloader.SMOKE_SCENARIO))))
 
+class ReloaderRobustnessTest(unittest.TestCase):
+    """final review I2 (2026-10-15): the watcher never dies silently, never smokes a stale candidate, and sees edits made while down"""
+    def setUp(self):
+        self.tmp = tempfile.TemporaryDirectory(); self.led = Path(self.tmp.name)
+        self.p = mock.patch.object(paths, 'path', lambda n: self.led); self.p.start()
+    def tearDown(self): self.p.stop(); self.tmp.cleanup()
+    def rows(self): return [json.loads(l) for l in (self.led / 'reload.jsonl').read_text().splitlines()]
+    def test_unexpected_exception_is_ledgered_not_fatal(self):
+        def boom(): raise OSError('disk full')
+        row = reloader.safe_attempt(['webui/server.py'], run_tests=boom, start_candidate=lambda: None, smoke=lambda: (True, ''), restart=lambda: None)
+        self.assertEqual(row['result'], 'error'); self.assertIn('disk full', self.rows()[-1]['error'])
+    def test_candidate_that_exited_is_not_smoked(self):
+        restarted, smoked = [], []
+        cand = mock.Mock(); cand.poll.return_value = 1
+        row = reloader.attempt(['webui/server.py'], run_tests=lambda: (True, ''), start_candidate=lambda: cand,
+                               smoke=lambda: smoked.append(1) or (True, ''), restart=lambda: restarted.append(1))
+        self.assertEqual((row['result'], smoked, restarted), ('candidate-exited', [], []))
+    def test_candidate_is_killed_when_terminate_hangs(self):
+        cand = mock.Mock(); cand.poll.return_value = None
+        cand.wait.side_effect = [reloader.subprocess.TimeoutExpired('server', 10), 0]
+        reloader.attempt(['webui/server.py'], run_tests=lambda: (True, ''), start_candidate=lambda: cand, smoke=lambda: (True, ''), restart=lambda: None)
+        cand.terminate.assert_called_once(); cand.kill.assert_called_once()
+    def test_config_toml_is_watched(self):
+        root = self.led / 'repo'; (root / 'config').mkdir(parents=True); (root / 'config/paths.toml').write_text('x')
+        self.assertIn('config/paths.toml', reloader.scan(root))
+    def test_edits_made_while_down_are_noticed(self):
+        reloader.save_seen({'webui/server.py': 1.0, 'webui/static/app.js': 2.0})
+        self.assertEqual(reloader.changed_since(reloader.load_seen(), {'webui/server.py': 5.0, 'webui/static/app.js': 2.0}), ['webui/server.py'])
+        self.assertEqual(reloader.changed_since(None, {'webui/server.py': 5.0}), [])
+
+
 if __name__ == '__main__': unittest.main()
