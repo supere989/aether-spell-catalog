@@ -33,6 +33,11 @@ def decode_texture(path):
    a=255 if depth==0 else alpha[i] if depth==8 else ((alpha[i//2]>>((i%2)*4))&15)*17 if depth==4 else ((alpha[i//8]>>(i%8))&1)*255
    pixels[i*4:i*4+4]=bytes((r,g,b,a))
   return Image.frombytes('RGBA',(width,height),bytes(pixels))
+ if raw[:4]==b'BLP2' and raw[8]==3:  # uncompressed BGRA (Pillow has no decoder for it); first mip level only
+  width,height=struct.unpack_from('<II',raw,12);offset=struct.unpack_from('<I',raw,20)[0];n=width*height*4
+  if not 0<width<=4096 or not 0<height<=4096:raise ValueError('Unsupported raw texture')
+  if len(raw)<offset+n:raise ValueError('Truncated raw texture')
+  return Image.frombytes('RGBA',(width,height),bytes(raw[offset:offset+n]),'raw','BGRA')
  with Image.open(path) as im:
   if im.width>4096 or im.height>4096:raise ValueError('Texture exceeds preview bounds')
   return im.convert('RGBA')
