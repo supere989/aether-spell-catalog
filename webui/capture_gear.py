@@ -1,18 +1,15 @@
 """Read-only capture of available set items from local qualification database."""
-import os,re,json,subprocess,struct,hashlib
+import json,subprocess,struct,hashlib
 from pathlib import Path
+import paths
 OUT=Path(__file__).resolve().parent
-conf=Path('/work/wow-coa/dungeon-runs/fixture-observer-isolation-witness/worldserver.conf')
-line=re.search(r'^WorldDatabaseInfo\s*=\s*"([^"]+)"',conf.read_text(),re.M).group(1)
-host,port,user,password,db=line.split(';')
-env=os.environ.copy();env['MYSQL_PWD']=password
-args=['mysql','-h',host,'-P',port,'-u',user,'--batch','--raw',db]
+args,env=paths.mysql_args(['--batch','--raw']);db=paths.world_db()['database']
 def query(q):
  r=subprocess.run(args,input=q,text=True,capture_output=True,env=env,timeout=90)
  if r.returncode:raise RuntimeError('Read-only item query failed')
  lines=r.stdout.splitlines();keys=lines[0].split('\t')
  return [dict(zip(keys,line.split('\t'))) for line in lines[1:]]
-p=Path('/tmp/coa-restart-validation/data/dbc/ItemSet.dbc');b=p.read_bytes();_,n,f,z,ss=struct.unpack_from('<4s4I',b);strings=b[20+n*z:]
+p=paths.path('dbc')/'ItemSet.dbc';b=p.read_bytes();_,n,f,z,ss=struct.unpack_from('<4s4I',b);strings=b[20+n*z:]
 sets=[]
 for i in range(n):
  r=struct.unpack_from('<'+str(f)+'I',b,20+i*z)

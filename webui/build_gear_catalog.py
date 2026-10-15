@@ -1,12 +1,13 @@
 """Enumerate sets from captured DBC and local item templates without inventing class sets."""
 import json,hashlib,sqlite3,sys
 from pathlib import Path
+import paths
 from collections import Counter
 B=Path(__file__).resolve().parent
 source=json.loads((B/'gear-source.json').read_text())
-sys.path.insert(0,'/work/wow-coa/merge/core/apps/coa-dbc')
+sys.path.insert(0,str(paths.path('coa_src')/'apps/coa-dbc'))
 from inspect_dbc import DataSet
-ds=DataSet('/tmp/coa-restart-validation/data/dbc');table,schema,index,origin=ds.load('Spell')
+ds=DataSet(str(paths.path('dbc')));table,schema,index,origin=ds.load('Spell')
 cols={f.name:f for f in schema.columns}
 def val(row,name):
  if name not in cols:return 0

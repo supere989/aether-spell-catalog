@@ -1,14 +1,13 @@
-import os,re,json,subprocess,struct
+import json,subprocess,struct
 from pathlib import Path
+import paths
 B=Path(__file__).resolve().parent
-conf=Path('/work/wow-coa/dungeon-runs/fixture-observer-isolation-witness/worldserver.conf')
-host,port,user,password,db=re.search(r'^WorldDatabaseInfo\s*=\s*"([^"]+)"',conf.read_text(),re.M).group(1).split(';')
-env=os.environ.copy();env['MYSQL_PWD']=password
-r=subprocess.run(['mysql','-h',host,'-P',port,'-u',user,'--batch','--raw','--skip-column-names',db],input='SELECT entry,displayid FROM item_template WHERE itemset<>0;',env=env,capture_output=True,text=True,timeout=90)
+args,env=paths.mysql_args(['--batch','--raw','--skip-column-names'])
+r=subprocess.run(args,input='SELECT entry,displayid FROM item_template WHERE itemset<>0;',env=env,capture_output=True,text=True,timeout=90)
 if r.returncode:raise RuntimeError('Visual lookup failed')
 displays={int(a):int(b) for a,b in (line.split('\t') for line in r.stdout.splitlines())}
 def dbc(name):
- b=Path('/tmp/coa-restart-validation/data/dbc',name+'.dbc').read_bytes();_,n,f,z,_=struct.unpack_from('<4s4I',b);strings=b[20+n*z:]
+ b=(paths.path('dbc')/(name+'.dbc')).read_bytes();_,n,f,z,_=struct.unpack_from('<4s4I',b);strings=b[20+n*z:]
  def st(offset):return strings[offset:strings.find(b'\0',offset)].decode(errors='replace')
  return [struct.unpack_from('<'+str(f)+'I',b,20+i*z) for i in range(n)],st
 rows,st=dbc('ItemDisplayInfo');lookup={r[0]:r for r in rows};items={}

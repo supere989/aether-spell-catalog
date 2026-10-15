@@ -2,6 +2,7 @@
 import json,hashlib,subprocess,threading,struct
 from pathlib import Path
 from functools import lru_cache
+import paths
 BASE=Path(__file__).resolve().parent
 LOCK=threading.RLock()
 @lru_cache(maxsize=1)
@@ -13,7 +14,7 @@ def extract(identity):
  with LOCK:
   if not target.exists():
    temp=target.with_suffix('.tmp')
-   result=subprocess.run([str(BASE/'tools/mpqextract'),'extract',record['archive'],record['path'],str(temp)],capture_output=True,timeout=25)
+   result=subprocess.run([str(BASE/'tools/mpqextract'),'extract',str(paths.archive(record['archive'])),record['path'],str(temp)],capture_output=True,timeout=25)
    if result.returncode:temp.unlink(missing_ok=True);raise ValueError('Client asset could not be extracted')
    temp.replace(target)
  return target

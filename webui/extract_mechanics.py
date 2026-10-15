@@ -1,6 +1,7 @@
 import hashlib,json,re
 from pathlib import Path
-ROOT=Path('/work/wow-coa/merge/core/src/server/coa')
+import paths
+ROOT=paths.path('coa_src')/'src/server/coa'
 OUT=Path(__file__).resolve().parent/'mechanics-source.json'
 data={'coefficients':{},'sources':{},'progression':[],'stock_zero':[],'resource_gains':[],'resource_costs':[],'resource_displays':[]}
 def read(name):

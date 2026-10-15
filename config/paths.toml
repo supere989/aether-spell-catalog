@@ -1,0 +1,17 @@
+# Where the simulator's build inputs and outputs live (webui/paths.py). SIM_PATHS=/other.toml overrides.
+[paths]
+client_root = "/srv/mirror/ascension/current/files"
+coa_src = "/srv/simulator/inputs/coa-src"
+asset_catalog = "/srv/simulator/inputs/asset-catalog"
+third_party = "/srv/simulator/inputs/third_party"
+dbc = "/srv/simulator/data/dbc"
+data = "/srv/simulator/data"
+library = "/srv/simulator/library"
+ledger = "/srv/simulator/ledger"
+
+[world_db]
+host = "127.0.0.1"
+port = 3306
+user = "simread"
+database = "acore_world"
+password_file = "/srv/simulator/secrets/world-db-password"

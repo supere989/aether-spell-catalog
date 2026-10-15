@@ -2,10 +2,12 @@
 import collections, hashlib, json, re, sqlite3, sys
 from pathlib import Path
 P=Path(__file__).resolve().parent
-ROOT=Path('/work/wow-coa/merge/core')
+sys.path.insert(0,str(P/'webui'))
+import paths
+ROOT=paths.path('coa_src')
 sys.path.insert(0,str(ROOT/'apps/coa-dbc'))
 from inspect_dbc import DataSet
-DS=DataSet('/tmp/coa-restart-validation/data/dbc')
+DS=DataSet(str(paths.path('dbc')))
 inputs=[json.loads(s) for s in (P/'runes-unresolved.jsonl').read_text().splitlines()]
 c=sqlite3.connect(f'file:{P}/catalog.sqlite?mode=ro',uri=True)
 _,_,idx,origin=DS.load('Spell')

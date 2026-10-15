@@ -1,10 +1,11 @@
 """Trace set bonuses to acquired CoA spells/resources with explicit structural evidence."""
 import json,sqlite3,sys,collections,hashlib
 from pathlib import Path
+import paths
 B=Path(__file__).resolve().parent
-sys.path.insert(0,'/work/wow-coa/merge/core/apps/coa-dbc')
+sys.path.insert(0,str(paths.path('coa_src')/'apps/coa-dbc'))
 from inspect_dbc import DataSet
-D=DataSet('/tmp/coa-restart-validation/data/dbc');t,s,idx,origin=D.load('Spell');cols={c.name:c for c in s.columns}
+D=DataSet(str(paths.path('dbc')));t,s,idx,origin=D.load('Spell');cols={c.name:c for c in s.columns}
 cache={}
 def raw(identity):
  if identity in cache:return cache[identity]
@@ -69,7 +70,7 @@ for definition in data['sets']:
  definition['linked_classes']=sorted(allclasses)
  definition['class_association']='single-class structural link' if len(allclasses)==1 else 'multi-class structural link' if allclasses else 'shared stats / cosmetic / unresolved scripts'
  for cls in allclasses:byclass[str(cls)].append(definition['id'])
-report=dict(mapped_bonus_entries=mapped_bonus,structural_links=links_total,linked_sets=sum(bool(s['linked_classes']) for s in data['sets']),single_class_sets=sum(len(s['linked_classes'])==1 for s in data['sets']),class_sets=byclass,spell_dbc_sha256=hashlib.sha256(Path('/tmp/coa-restart-validation/data/dbc/Spell.dbc').read_bytes()).hexdigest(),limits='Structural association is not class-exclusive ownership or tier proof. Unmatched script-only logic and name-only hints remain unresolved. Acquisition candidates include talent candidates.')
+report=dict(mapped_bonus_entries=mapped_bonus,structural_links=links_total,linked_sets=sum(bool(s['linked_classes']) for s in data['sets']),single_class_sets=sum(len(s['linked_classes'])==1 for s in data['sets']),class_sets=byclass,spell_dbc_sha256=hashlib.sha256((paths.path('dbc')/'Spell.dbc').read_bytes()).hexdigest(),limits='Structural association is not class-exclusive ownership or tier proof. Unmatched script-only logic and name-only hints remain unresolved. Acquisition candidates include talent candidates.')
 data['class_mapping']=report;(B/'gear-catalog.json').write_text(json.dumps(data,separators=(',',':')))
 (B/'set-class-mapping.json').write_text(json.dumps(report,indent=2))
 labels=['Barbarian','Witch Doctor','Felsworn','Witch Hunter','Stormbringer','Knight of Xoroth','Guardian','Templar','Bloodmage','Ranger','Chronomancer','Necromancer','Pyromancer','Cultist','Starcaller','Sun Cleric','Tinker','Venomancer','Reaper','Primalist','Runemaster']

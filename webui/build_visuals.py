@@ -1,19 +1,20 @@
 """Stage local-only visual references and static player meshes from installed archives."""
 import json,re,hashlib,sys,struct
 from pathlib import Path
-B=Path(__file__).resolve().parent;ROOT=Path('/home/raymondj/projects/wow-coa');DATA=(ROOT/'client/ascension-live/Data').resolve()
+import paths
+B=Path(__file__).resolve().parent;CLIENT=paths.path('client_root');CATALOG=paths.path('asset_catalog');DATA=CLIENT/'Data'
 source=json.loads((B/'visual-source.json').read_text());available={}
 archives={p.name.lower():p for p in DATA.glob('*.MPQ')};archives.update({'enus_'+p.name.lower():p for p in (DATA/'enUS').glob('*.MPQ')})
 def priority(name):
  name=name.lower().replace('enus_','');return (3 if name.startswith('patch') else 2 if name.startswith('lichking') else 1 if name.startswith('expansion') else 0,name)
-for listing in sorted((ROOT/'asset-catalog/mpq-index').glob('*.txt'),key=lambda p:priority(p.name)):
+for listing in sorted((CATALOG/'mpq-index').glob('*.txt'),key=lambda p:priority(p.name)):
  archive=archives.get(listing.name[:-4].lower())
  if not archive:continue
  for line in listing.read_text(errors='replace').splitlines():
   match=re.match(r'\s*\d+\s+(.+)$',line)
   if match:
    path=match[1];key=path.replace('/','\\').lower()
-   if key.startswith(('interface\\icons\\','character\\','item\\')):available[key]=(str(archive),path)
+   if key.startswith(('interface\\icons\\','character\\','item\\')):available[key]=(str(archive.relative_to(CLIENT)),path)
 files={};missing=set()
 def register(path):
  if not path:return None

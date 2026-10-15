@@ -1,5 +1,6 @@
 import sys,json,hashlib
-sys.path.insert(0,'/home/raymondj/projects/wow-trinitycore/clientdev/tools/third_party')
+import paths
+sys.path.insert(0,str(paths.path('third_party')))
 from pywowlib.m2_file import M2File
 from pywowlib.file_formats.skin_format import M2SkinProfile
 from asset_io import BASE,extract,manifest

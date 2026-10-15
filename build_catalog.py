@@ -7,12 +7,14 @@ import sqlite3
 import sys
 from datetime import datetime, timezone
 
-ROOT = Path('/work/wow-coa/merge/core')
+sys.path.insert(0, str(Path(__file__).resolve().parent / 'webui'))
+import paths
+ROOT = paths.path('coa_src')
 OUT = Path(__file__).resolve().parent
 sys.path.insert(0, str(ROOT / 'apps/coa-dbc'))
 from inspect_dbc import DataSet
 
-DS = DataSet('/tmp/coa-restart-validation/data/dbc')
+DS = DataSet(str(paths.path('dbc')))
 DB = OUT / 'catalog.sqlite'
 if DB.exists():
     raise SystemExit('Refusing to replace an existing catalog')
