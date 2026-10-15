@@ -1,7 +1,7 @@
 """Refuse to push what must not be public (the repo is public): files > 2 MB, game-derived data, credentials, internal addresses."""
 import fnmatch, re, subprocess, sys
 LIMIT = 2_000_000
-DATA = ('*.sqlite', '*.jsonl', '*.png', 'webui/assets/*', 'webui/tools/mpqextract', 'webui/tools/mpqtool', 'backups/*',
+DATA = ('*.sqlite', '*.jsonl', '*.png', 'webui/assets', 'webui/assets/*', 'webui/tools/mpqextract', 'webui/tools/mpqtool', 'backups/*',
         'GEAR-SETS.md', 'RUNE-DESCRIPTIONS.md', 'SET-CLASS-MAPPING.md')
 SECRET = re.compile(r'''(?i)(passw(or)?d|secret|token|api[_-]?key)\s*[=:]\s*['"][^'"\s]{6,}|BEGIN [A-Z ]*PRIVATE KEY|gh[pousr]_[A-Za-z0-9]{20}''')
 INTERNAL = re.compile(r'\b(10\.150\.\d+\.\d+|10\.99\.\d+\.\d+|100\.(6[4-9]|[7-9]\d|1[01]\d|12[0-7])\.\d+\.\d+)\b')

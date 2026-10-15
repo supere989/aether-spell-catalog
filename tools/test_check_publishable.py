@@ -6,7 +6,7 @@ class CheckTest(unittest.TestCase):
     def test_clean(self): self.assertEqual(c.problems([('webui/server.py', 7000, 'import json')]), [])
     def test_big_file(self): self.assertTrue(c.problems([('x.js', 3_000_000, '')]))
     def test_game_data(self):
-        for p in ('catalog.sqlite', 'a.jsonl', 'webui/gear-catalog.json', 'webui/assets/x.png', 'webui/tools/mpqextract'):
+        for p in ('catalog.sqlite', 'a.jsonl', 'webui/gear-catalog.json', 'webui/assets/x.png', 'webui/assets', 'webui/tools/mpqextract'):
             self.assertTrue(c.problems([(p, 10, '')]), p)
         self.assertEqual(c.problems([('planner/example-dps.json', 10, '{}')]), [])
     def test_credentials_and_hosts(self):

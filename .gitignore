@@ -15,7 +15,7 @@ RUNE-DESCRIPTIONS.md
 SET-CLASS-MAPPING.md
 
 # Extracted client assets, renders and screenshots
-webui/assets/
+webui/assets
 *.png
 
 # Prebuilt MPQ tools (source: webui/tools/extract.cpp)
