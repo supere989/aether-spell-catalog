@@ -49,4 +49,22 @@ class MirrorStatusTest(unittest.TestCase):
         self.assertEqual(status.mirror_status(Path('/nonexistent-mirror'))['ascension']['current'], None)
 
 
+class ReloadSummaryTest(unittest.TestCase):
+    """deferred minor M9: /api/status carries reload totals per result, not only the last row"""
+    def test_counts(self):
+        import tempfile
+        from pathlib import Path
+        with tempfile.TemporaryDirectory() as t:
+            f = Path(t) / 'reload.jsonl'
+            f.write_text('\n'.join(json.dumps({'result': r}) for r in ('reloaded', 'tests-failed', 'reloaded', 'static-live')) + '\nnot json\n')
+            self.assertEqual(status.reload_counts(f), {'reloaded': 2, 'tests-failed': 1, 'static-live': 1, 'unreadable': 1})
+        self.assertEqual(status.reload_counts(Path('/nonexistent/reload.jsonl')), {})
+    def test_status_endpoint_has_counts(self):
+        srv = ThreadingHTTPServer(('127.0.0.1', 0), server.Handler); srv.base_path = ''; srv.public_origin = None
+        threading.Thread(target=srv.serve_forever, daemon=True).start()
+        try: s = json.load(urllib.request.urlopen(f'http://127.0.0.1:{srv.server_port}/api/status', timeout=10))
+        finally: srv.shutdown()
+        self.assertIn('reload_counts', s)
+
+
 if __name__ == '__main__': unittest.main()

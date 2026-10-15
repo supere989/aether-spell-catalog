@@ -44,3 +44,13 @@ def mirror_status(root):
     except OSError: pin = None
     return {'ascension': {'current': release, 'pin_sha256': pin, 'last': last_line(root / 'ledger/ascension.jsonl')}}
 
+def reload_counts(path):
+    """how every guarded-reload attempt ended, summed over the whole ledger (a row that cannot be parsed counts as 'unreadable')"""
+    out = Counter()
+    try: lines = path.read_text().splitlines()
+    except OSError: return {}
+    for line in filter(None, lines):
+        try: out[json.loads(line).get('result') or 'unknown'] += 1
+        except ValueError: out['unreadable'] += 1
+    return dict(out)
+
