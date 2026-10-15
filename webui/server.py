@@ -1,4 +1,4 @@
-import argparse,json,sqlite3,threading,re,subprocess
+import argparse,json,sqlite3,threading,re,subprocess,time
 from functools import lru_cache
 from asset_io import png
 from http.server import BaseHTTPRequestHandler,ThreadingHTTPServer
@@ -7,8 +7,25 @@ from urllib.parse import parse_qs,urlsplit
 from gear_catalog import search_sets,set_detail,search_items
 from simulation import CLASSES,simulate
 from class_mechanics import kit
+import paths,status
 BASE=Path(__file__).resolve().parent
 GATE=threading.BoundedSemaphore(2)
+COUNTERS=status.Counters()
+ASSET_PATH=re.compile(rb'''(["'`])/(api/|assets/|models/|vendor/|viewer\.js|app\.js|sets\.js|character\.js|style\.css)''')
+def prefixed(data,prefix):return ASSET_PATH.sub(lambda m:m[1]+prefix.encode()+b'/'+m[2],data)
+ROUTES={'/','/app.js','/sets.js','/character.js','/style.css','/viewer.js','/vendor/three.module.js','/vendor/three.core.js','/vendor/OrbitControls.js',
+        '/api/status','/api/item-model','/api/visuals','/api/gear-sets','/api/gear-set','/api/gear-items','/api/classes','/api/simulate','/api/kit'}
+def route_key(path):return path if path in ROUTES else '/assets/*' if path.startswith('/assets/') else '/models/*' if path.startswith('/models/') else 'other'
+def library(*parts):
+    """A file of the pre-built asset library (build_library.py), or None where this machine has none."""
+    try:f=paths.path('library').joinpath(*parts);return f if f.is_file() else None
+    except (OSError,KeyError,ValueError):return None
+def status_report():
+    def at(name,file):
+        try:return paths.path(name)/file
+        except (OSError,KeyError,ValueError):return None  # no config/paths.toml layout on this machine
+    lib,led,src=at('library','generation.json'),at('ledger','reload.jsonl'),at('data','sources.json')
+    return COUNTERS.snapshot()|{'library':status.read_json(lib,{}) if lib else {},'reload':(status.last_line(led) if led else None) or {},'sources':status.read_json(src,{}) if src else {}}
 @lru_cache(maxsize=1)
 def visuals():return json.loads((BASE/'assets/visuals.json').read_text())
 MODEL_GATE=threading.Lock()
@@ -29,8 +46,8 @@ class Handler(BaseHTTPRequestHandler):
         if kind=='application/json':data=json.dumps(data).encode()
         prefix=getattr(self.server,'base_path','')
         if prefix and kind in ('application/json','text/html','text/javascript','application/octet-stream'):
-            data=re.sub(rb'''(["'`])/(api/|assets/|models/|vendor/|viewer\.js|app\.js|sets\.js|character\.js|style\.css)''',lambda m:m[1]+prefix.encode()+b'/'+m[2],data)
-        self.send_response(code);self.send_header('Content-Type',kind+'; charset=utf-8');self.send_header('Content-Length',str(len(data)))
+            data=prefixed(data,prefix)
+        COUNTERS.bump(f'status:{code}');self.send_response(code);self.send_header('Content-Type',kind+'; charset=utf-8');self.send_header('Content-Length',str(len(data)))
         self.send_header('X-Content-Type-Options','nosniff');self.send_header('Cache-Control','no-store');self.end_headers()
         if self.command!='HEAD':self.wfile.write(data)
     def route(self):
@@ -43,9 +60,20 @@ class Handler(BaseHTTPRequestHandler):
         self.do_GET()
     def do_GET(self):
         if not self.route():return self.send(404,{'error':'Not found'})
-        path=self.path.split('?')[0]
+        path=self.path.split('?')[0];t0=time.monotonic();COUNTERS.bump('route:'+route_key(path))
+        try:return self.get(path)
+        finally:
+            if time.monotonic()-t0>5:COUNTERS.bump('slow')
+    def get(self,path):
+        if path=='/api/status':
+            if self.headers.get('X-Forwarded-For'):return self.send(404,{'error':'Not found'})
+            return self.send(200,status_report())
         if path=='/api/item-model':
-            identity=parse_qs(urlsplit(self.path).query).get('id',[''])[0];skin=item_models().get(identity)
+            identity=parse_qs(urlsplit(self.path).query).get('id',[''])[0]
+            if not re.fullmatch(r'[a-f0-9]{32}',identity):return self.send(404,{'error':'Unknown item model'})
+            built=library('item-models',identity+'.json')
+            if built:return self.send(200,built.read_bytes(),'application/octet-stream')
+            skin=item_models().get(identity)
             if not skin:return self.send(404,{'error':'Unknown item model'})
             try:
                 with MODEL_GATE:
@@ -56,6 +84,8 @@ class Handler(BaseHTTPRequestHandler):
             except (OSError,subprocess.SubprocessError):return self.send(422,{'error':'Item model could not be converted'})
         if path=='/api/visuals':return self.send(200,visuals())
         if re.fullmatch(r'/assets/[a-f0-9]{32}\.png',path):
+            built=library('assets',path[8:])
+            if built:return self.send(200,built.read_bytes(),'image/png')
             try:return self.send(200,png(path[8:-4]).read_bytes(),'image/png')
             except (ValueError,OSError):return self.send(404,{'error':'Texture unavailable'})
         if re.fullmatch(r'/models/[0-9]{1,2}-[01]\.json',path):
@@ -91,6 +121,7 @@ class Handler(BaseHTTPRequestHandler):
     def do_POST(self):
         if not self.route():return self.send(404,{'error':'Not found'})
         if self.path not in ('/api/simulate','/api/kit'):return self.send(404,{'error':'Not found'})
+        COUNTERS.bump('route:'+self.path)
         if self.headers.get('Origin') not in (None,f'http://127.0.0.1:{self.server.server_port}',f'http://localhost:{self.server.server_port}',getattr(self.server,'public_origin',None)):
             return self.send(403,{'error':'Origin not allowed'})
         try:
@@ -99,14 +130,20 @@ class Handler(BaseHTTPRequestHandler):
             config=json.loads(self.rfile.read(n))
             if not isinstance(config,dict):raise ValueError('Expected a scenario object')
         except (ValueError,TypeError):return self.send(400,{'error':'Invalid scenario JSON'})
-        if not GATE.acquire(blocking=False):return self.send(429,{'error':'Two simulations are already running'})
-        try:self.send(200,kit(config) if self.path=='/api/kit' else simulate(config))
-        except (ValueError,TypeError,KeyError,AttributeError) as e:self.send(400,{'error':str(e)})
-        finally:GATE.release()
+        if not GATE.acquire(blocking=False):COUNTERS.bump('rejected:busy');return self.send(429,{'error':'Two simulations are already running'})
+        name='kit' if self.path=='/api/kit' else 'simulate';t0=time.monotonic()
+        try:
+            result=kit(config) if name=='kit' else simulate(config)
+            if name=='simulate':COUNTERS.record_run(config,result)
+            COUNTERS.bump(name+':ok');self.send(200,result)
+        except (ValueError,TypeError,KeyError,AttributeError) as e:COUNTERS.bump(name+':fail');self.send(400,{'error':str(e)})
+        finally:
+            GATE.release()
+            if time.monotonic()-t0>5:COUNTERS.bump('slow')
 if __name__=='__main__':
-    p=argparse.ArgumentParser();p.add_argument('--port',type=int,default=8787);p.add_argument('--base-path',default='');p.add_argument('--public-origin');args=p.parse_args()
+    p=argparse.ArgumentParser();p.add_argument('--port',type=int,default=8787);p.add_argument('--base-path',default='');p.add_argument('--public-origin');p.add_argument('--bind',default='127.0.0.1');args=p.parse_args()
     if args.base_path and not re.fullmatch(r'/[a-zA-Z0-9_-]+',args.base_path):p.error('Invalid base path')
-    print(f'Combat Lab: http://127.0.0.1:{args.port}',flush=True)
-    server=ThreadingHTTPServer(('127.0.0.1',args.port),Handler)
+    print(f'Combat Lab: http://{args.bind}:{args.port}',flush=True)
+    server=ThreadingHTTPServer((args.bind,args.port),Handler)
     server.base_path=args.base_path;server.public_origin=args.public_origin
     server.serve_forever()
