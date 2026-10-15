@@ -1,0 +1,54 @@
+{
+  "duration": 20,
+  "step": 0.5,
+  "beam_width": 24,
+  "resources": {
+    "mana": {
+      "cap": 120,
+      "initial": 120,
+      "regen": 4
+    }
+  },
+  "health": 1500,
+  "initial_health": 1500,
+  "incoming_dps": 0,
+  "abilities": [
+    {
+      "id": "efficient_bolt",
+      "name": "efficient_bolt",
+      "reviewed": true,
+      "evidence": "Illustrative hand-authored fixture; not a CoA spell or measured game value",
+      "damage": 100,
+      "cost": 12,
+      "resource": "mana",
+      "cast": 1.5,
+      "gcd": 1.5,
+      "school": "arcane"
+    },
+    {
+      "id": "heavy_bolt",
+      "name": "heavy_bolt",
+      "reviewed": true,
+      "evidence": "Illustrative hand-authored fixture; not a CoA spell or measured game value",
+      "damage": 260,
+      "cost": 45,
+      "resource": "mana",
+      "cast": 2,
+      "gcd": 1.5,
+      "cooldown": 6,
+      "school": "arcane"
+    },
+    {
+      "id": "recover",
+      "name": "recover",
+      "reviewed": true,
+      "evidence": "Illustrative hand-authored fixture; not a CoA spell or measured game value",
+      "gain": 35,
+      "resource": "mana",
+      "cast": 2,
+      "gcd": 1.5,
+      "cooldown": 8
+    }
+  ],
+  "mode": "dps"
+}

@@ -1,0 +1,52 @@
+{
+  "dps": {
+    "dps": 66.0,
+    "effective_hps": 0.0,
+    "casts": 11,
+    "health_remaining": 1500.0,
+    "remaining_resources": {
+      "mana": 49.0
+    },
+    "pvp": null,
+    "evaluation_seconds": 0.048
+  },
+  "dps-rune": {
+    "dps": 76.0,
+    "effective_hps": 0.0,
+    "casts": 12,
+    "health_remaining": 1500.0,
+    "remaining_resources": {
+      "mana": 20.0
+    },
+    "pvp": null,
+    "evaluation_seconds": 0.048
+  },
+  "hps": {
+    "dps": 0.0,
+    "effective_hps": 90.0,
+    "casts": 13,
+    "health_remaining": 1500.0,
+    "remaining_resources": {
+      "mana": 42.0
+    },
+    "pvp": null,
+    "evaluation_seconds": 0.036
+  },
+  "pvp": {
+    "dps": 82.0,
+    "effective_hps": 0.0,
+    "casts": 19,
+    "health_remaining": 55.0,
+    "remaining_resources": {
+      "mana": 5.0
+    },
+    "pvp": {
+      "five_second_burst_damage": 450,
+      "control_seconds": 3.0,
+      "control_uptime": 0.15,
+      "survival_seconds": 20.0,
+      "survived": true
+    },
+    "evaluation_seconds": 0.074
+  }
+}

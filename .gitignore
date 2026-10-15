@@ -1,0 +1,33 @@
+# Source, tests, static UI and hand-written docs are tracked. Everything the
+# build/capture/extract scripts produce is derived from the Ascension client
+# (DBC, MPQ models/textures) or the CoA world database, so it stays local.
+
+# Generated data (catalog, captures, evidence, receipts, results)
+*.sqlite
+*.jsonl
+*.json
+!planner/example-*.json
+backups/
+
+# Generated listings
+GEAR-SETS.md
+RUNE-DESCRIPTIONS.md
+SET-CLASS-MAPPING.md
+
+# Extracted client assets, renders and screenshots
+webui/assets/
+*.png
+
+# Prebuilt MPQ tools (source: webui/tools/extract.cpp)
+webui/tools/mpqextract
+webui/tools/mpqtool
+
+# Runtime and environment
+webui/.asset-venv/
+__pycache__/
+*.pyc
+*.log
+*.pid
+
+# Ops script with internal host details (VM193 deploy)
+deploy_live_descriptions.py

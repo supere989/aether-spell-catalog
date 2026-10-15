@@ -1,0 +1,53 @@
+{
+  "duration": 20,
+  "step": 0.5,
+  "beam_width": 24,
+  "resources": {
+    "mana": {
+      "cap": 120,
+      "initial": 120,
+      "regen": 4
+    }
+  },
+  "health": 1500,
+  "initial_health": 1500,
+  "incoming_dps": 90,
+  "abilities": [
+    {
+      "id": "small_heal",
+      "name": "small_heal",
+      "reviewed": true,
+      "evidence": "Illustrative hand-authored fixture; not a CoA spell or measured game value",
+      "healing": 160,
+      "cost": 12,
+      "resource": "mana",
+      "cast": 1.5,
+      "gcd": 1.5,
+      "school": "holy"
+    },
+    {
+      "id": "large_heal",
+      "name": "large_heal",
+      "reviewed": true,
+      "evidence": "Illustrative hand-authored fixture; not a CoA spell or measured game value",
+      "healing": 400,
+      "cost": 38,
+      "resource": "mana",
+      "cast": 2.5,
+      "gcd": 1.5,
+      "school": "holy"
+    },
+    {
+      "id": "recover",
+      "name": "recover",
+      "reviewed": true,
+      "evidence": "Illustrative hand-authored fixture; not a CoA spell or measured game value",
+      "gain": 35,
+      "resource": "mana",
+      "cast": 2,
+      "gcd": 1.5,
+      "cooldown": 8
+    }
+  ],
+  "mode": "hps"
+}

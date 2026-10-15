@@ -1,0 +1,53 @@
+{
+  "duration": 20,
+  "step": 0.5,
+  "beam_width": 24,
+  "resources": {
+    "mana": {
+      "cap": 120,
+      "initial": 120,
+      "regen": 4
+    }
+  },
+  "health": 1500,
+  "initial_health": 1500,
+  "incoming_dps": 85,
+  "abilities": [
+    {
+      "id": "quick_strike",
+      "name": "quick_strike",
+      "reviewed": true,
+      "evidence": "Illustrative hand-authored fixture; not a CoA spell or measured game value",
+      "damage": 90,
+      "cost": 10,
+      "resource": "mana",
+      "gcd": 1
+    },
+    {
+      "id": "self_heal",
+      "name": "self_heal",
+      "reviewed": true,
+      "evidence": "Illustrative hand-authored fixture; not a CoA spell or measured game value",
+      "healing": 250,
+      "cost": 25,
+      "resource": "mana",
+      "cast": 1.5,
+      "gcd": 1.5,
+      "school": "holy"
+    },
+    {
+      "id": "disable",
+      "name": "disable",
+      "reviewed": true,
+      "evidence": "Illustrative hand-authored fixture; not a CoA spell or measured game value",
+      "damage": 20,
+      "cost": 15,
+      "resource": "mana",
+      "gcd": 1,
+      "control_duration": 3,
+      "control_category": "stun",
+      "cooldown": 8
+    }
+  ],
+  "mode": "pvp"
+}
