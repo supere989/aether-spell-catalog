@@ -31,3 +31,6 @@ __pycache__/
 
 # Ops script with internal host details (VM193 deploy)
 deploy_live_descriptions.py
+
+# StormLib build tree (tools/build-tools.sh)
+.build/
